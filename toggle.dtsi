@@ -1,0 +1,10 @@
+/ {
+	toggle-pd10{
+		compatible="toggle-pd10";
+		pd10{
+			label="pd10";
+			toggle-gpios = <&pioA PIN_PD10 GPIO_ACTIVE_LOW>;
+		};	
+	};
+};
+
