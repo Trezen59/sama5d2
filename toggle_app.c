@@ -119,3 +119,16 @@ int gpio_file_close(int fd)
 {
     return close(fd);
 }
+
+
+
+int main()
+{   
+    gpio_configure_dir("pd10", GPIO_DIR_OUT);
+    
+    gpio_write_value("pd10", GPIO_LOW_VALUE);
+    
+    gpio_write_value("pd10", GPIO_HIGH_VALUE);
+    
+    return 0;
+}
