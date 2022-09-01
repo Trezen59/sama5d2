@@ -6,15 +6,18 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include<string.h>
-#include<stdlib.h>
-#include "gpio.h"
+#include <string.h>
+#include <stdlib.h>
+#include "toggle_app.h"
 
 
 /*
- *  GPIO configure direction
- *  dir_value : 1 means 'out' , 0 means "in"
- */
+
+GPIO configure direction
+dir_value : 1 means 'out' , 0 means "in"
+
+*/
+
 int gpio_configure_dir(char *gpio_label, uint8_t dir_value)
 {
     int fd;
@@ -22,7 +25,7 @@ int gpio_configure_dir(char *gpio_label, uint8_t dir_value)
 
     snprintf(buf, sizeof(buf), SYS_GPIO_PATH "/%s/direction", gpio_label);
 
-    /* opens the sysfs attribute 'direcito' in the provided sysfs path */
+    /* opens the sysfs attribute 'direction' in the provided sysfs path */
     fd = open(buf, O_WRONLY | O_SYNC);
     if (fd < 0) {
         perror("gpio direction configure\n");
@@ -41,9 +44,12 @@ int gpio_configure_dir(char *gpio_label, uint8_t dir_value)
 }
 
 /*
- *  GPIO write value
- *  out_value : can be either 0 or 1
- */
+
+   GPIO write value
+   out_value : can be either 0 or 1
+
+*/
+
 int gpio_write_value(char *gpio_label, uint8_t out_value)
 {
     int fd;
@@ -67,8 +73,9 @@ int gpio_write_value(char *gpio_label, uint8_t out_value)
 }
 
 /*
- *  GPIO read value
+   GPIO read value
  */
+
 int gpio_read_value(char *gpio_label)
 {
     int fd;

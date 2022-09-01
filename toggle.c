@@ -184,8 +184,7 @@ int gpio_sysfs_probe(struct platform_device *pdev)
 			
 		}
 
-		dev_data->desc = devm_fwnode_get_gpiod_from_child(dev,"toggle",&child->fwnode,\
-							GPIOD_ASIS,dev_data->label);
+		dev_data->desc = devm_get_gpiod_from_child(dev,"toggle",&child->fwnode);
 		if(IS_ERR( dev_data->desc)){
 			ret = PTR_ERR(dev_data->desc);
 			if(ret == -ENOENT)

@@ -1,0 +1,1 @@
+cmd_/home/trezen/Documents/toggle/toggle.ko := /opt/poky-atmel/2.4.4/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/trezen/Documents/toggle/toggle.ko /home/trezen/Documents/toggle/toggle.o /home/trezen/Documents/toggle/toggle.mod.o ;  true
