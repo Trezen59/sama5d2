@@ -1,0 +1,36 @@
+sudo minicom -wD /dev/ttyUSB0
+
+
+scp -i ~/Comm-II.pem toggle.ko root@172.25.5.8:
+
+
+login : root
+board password : 4help2shoppers
+
+
+copy dtb and zimage to board
+
+
+build/
+source c3_setup.sh
+bitbake linux-at91
+
+build/tmp/work/sama5_com****/linux-at91/build/arch/arm/boot/zImage
+build/tmp/work/sama5_com****/linux-at91/package/boot/device-tree***
+
+
+scp -i ~/Comm-II.pem file ip@path:
+
+dtb
+- flash_eraseall /dev/mtd4
+- nandwrite -p /dev/mtd4 at91-sama5d2_com3.dtb
+
+zImage
+- flash_eraseall /dev/mtd5
+- nandwrite -p /dev/mtd5 zImage
+
+reboot
+
+insmod toogle.ko
+
+

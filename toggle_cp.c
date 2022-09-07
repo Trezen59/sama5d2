@@ -14,10 +14,6 @@
 #undef pr_fmt
 #define pr_fmt(fmt) "%s : " fmt,__func__
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Trezen");
-MODULE_DESCRIPTION("A gpio sysfs driver to toggle PD10");
-
 
 /*Device private data structure */
 struct gpiodev_private_data
@@ -30,15 +26,15 @@ struct gpiodev_private_data
 /*Driver private data structure */
 struct gpiodrv_private_data
 {
+//	int total_devices;
 	struct class *class_gpio;
-	struct device *dev;
+	struct device **dev;
 };
-
 
 struct gpiodrv_private_data gpio_drv_data;
 
 
-ssize_t direction_show(struct device *dev, struct device_attribute *attr, char *buf)
+ssize_t direction_show(struct device *dev, struct device_attribute *attr,char *buf)
 {
 	struct gpiodev_private_data *dev_data = dev_get_drvdata(dev);
 
@@ -48,10 +44,8 @@ ssize_t direction_show(struct device *dev, struct device_attribute *attr, char *
 	dir = gpiod_get_direction(dev_data->desc);
 	if(dir < 0)
 		return dir;
-	
-	/* if dir = 0 , then show "out". if dir = 1 , then show "in" */
-	
-	direction = (dir == 0) ? "out" : "in";
+	/* if dir = 0 , then show "out". if dir =1 , then show "in" */
+	direction = (dir == 0) ? "out":"in";
 
 	return sprintf(buf,"%s\n",direction);
 
@@ -62,42 +56,36 @@ ssize_t direction_store(struct device *dev, struct device_attribute *attr,const 
 
 	int ret;
 	struct gpiodev_private_data *dev_data = dev_get_drvdata(dev);
-
 	if(sysfs_streq(buf,"in") )
 		ret = gpiod_direction_input(dev_data->desc);
-	
-	else if(sysfs_streq(buf,"out"))
+	else if (sysfs_streq(buf,"out"))
 		ret = gpiod_direction_output(dev_data->desc,0);
-	
 	else
 		ret = -EINVAL;
 
 	return ret ? : count;
-	
 }
 
-ssize_t value_show(struct device *dev, struct device_attribute *attr, char *buf)
+ssize_t value_show(struct device *dev, struct device_attribute *attr,char *buf)
 {
 	struct gpiodev_private_data *dev_data = dev_get_drvdata(dev);
 	int value;
-	
 	value = gpiod_get_value(dev_data->desc);
-	
 	return sprintf(buf,"%d\n",value);
 }
 
-ssize_t value_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ssize_t value_store(struct device *dev, struct device_attribute *attr,const char *buf, size_t count)
 {
 
 	struct gpiodev_private_data *dev_data = dev_get_drvdata(dev);
 	int ret;
 	long value;
 
-	ret = kstrtol(buf, 0, &value);
+	ret = kstrtol(buf,0,&value);
 	if(ret)
 		return ret;
 	
-	gpiod_set_value(dev_data->desc, value);
+	gpiod_set_value(dev_data->desc,value);
 
 	return count;
 }
@@ -106,12 +94,8 @@ ssize_t value_store(struct device *dev, struct device_attribute *attr, const cha
 ssize_t label_show(struct device *dev, struct device_attribute *attr,char *buf)
 {
 	struct gpiodev_private_data *dev_data = dev_get_drvdata(dev);
-	
 	return sprintf(buf, "%s\n", dev_data->label);
 }
-
-
-/* attributes creation */
 
 static DEVICE_ATTR_RW(direction);
 static DEVICE_ATTR_RW(value);
@@ -137,26 +121,30 @@ static const struct attribute_group *gpio_attr_groups[] =
 
 };
 
-
-// remove function
 int gpio_sysfs_remove(struct platform_device *pdev)
 {
+	int i;
 	
 	dev_info(&pdev->dev,"Remove called\n");
 
-	device_unregister(gpio_drv_data.dev);
-	
+	for(i = 0 ; i < gpio_drv_data.total_devices ; i++){
+		device_unregister(gpio_drv_data.dev[i]);
+	}
 	return 0;
+
 }
 
 
-//probe function called when device detected
 int gpio_sysfs_probe(struct platform_device *pdev)
 {
-
 	struct device *dev = &pdev->dev;
+
+	int i = 0;
+
 	int ret;
+
 	const char *name;
+
 
 	/*parent device node */
 	struct device_node *parent = pdev->dev.of_node;
@@ -164,51 +152,50 @@ int gpio_sysfs_probe(struct platform_device *pdev)
 
 	struct gpiodev_private_data *dev_data;
 
-	dev_info(dev,"Probe called..\n");
-
-	gpio_drv_data.dev = devm_kzalloc(dev, sizeof(struct device *) , GFP_KERNEL);
-	if(!gpio_drv_data.dev)
-	{
-		dev_err(dev, "cannot allocate memory for gpio_drv_data\n");
-		return -ENOMEM;
+/*
+	gpio_drv_data.total_devices = of_get_child_count(parent);
+	if(!gpio_drv_data.total_devices){
+		dev_err(dev,"No devices found\n");
+		return -EINVAL;
 	}
 
-	// get the child node from parent node
+	dev_info(dev,"Total devices found = %d\n",gpio_drv_data.total_devices);
+
+	gpio_drv_data.dev = devm_kzalloc(dev, sizeof(struct device *) * gpio_drv_data.total_devices , GFP_KERNEL);
+	
+	gpio_drv_data.dev = devm_kzalloc(dev, sizeof(struct device *) * gpio_drv_data.total_devices , GFP_KERNEL);
+
 	for_each_available_child_of_node(parent,child)
 	{
 
-		dev_info(dev, "got the child node\n");
-
+	
+*/
 		dev_data = devm_kzalloc(dev, sizeof(*dev_data), GFP_KERNEL);
 		if(!dev_data){
 			dev_err(dev,"Cannot allocate memory\n");
 			return -ENOMEM;
 		}
 
-		// label = pd10 in dtsi
 		if(of_property_read_string(child, "label", &name))
 		{
 			dev_warn(dev,"Missing label information\n");
-			//snprintf(dev_data->label,sizeof(dev_data->label),"unkngpio%d",i);
+			snprintf(dev_data->label,sizeof(dev_data->label),"unkngpio%d",i);
 		}
 		else
 		{
-			strcpy(dev_data->label, name);
+			strcpy(dev_data->label,name);
 			dev_info(dev,"GPIO label = %s\n",dev_data->label);
-
+			
 		}
-		
-		// function renamed in latest patch releases  [ devm_fwnode_get_gpio_from_child -> devm_get_gpio_from_child ]
-		//dev_data->desc = devm_fwnode_get_gpiod_from_child(dev, "toggle", &child->fwnode, GPIOD_ASIS, dev_data->label);
-		
-		dev_data->desc = devm_get_gpiod_from_child(dev, "toggle", &child->fwnode);
 
+		dev_data->desc = devm_get_gpiod_from_child(dev, "toggle", &child->fwnode);
+		
 		if(IS_ERR(dev_data->desc))
 		{
 			ret = PTR_ERR(dev_data->desc);
 			if(ret == -ENOENT)
 				dev_err(dev,"No GPIO has been assigned to the requested function and/or index\n");
-
+			
 			return ret;
 		}
 
@@ -219,16 +206,20 @@ int gpio_sysfs_probe(struct platform_device *pdev)
 			return ret;
 		}
 
-		/*Create device under /sys/class/toggle-pd10 */
+		/*Create devices under /sys/class/toggle-pd10 */
+//		gpio_drv_data.dev[i] = device_create_with_groups(gpio_drv_data.class_gpio,dev,0,dev_data,gpio_attr_groups, dev_data->label);
+		
 		gpio_drv_data.dev = device_create_with_groups(gpio_drv_data.class_gpio, dev, 0, dev_data, gpio_attr_groups, dev_data->label);
-
-		if(IS_ERR(gpio_drv_data.dev)){
+		
+		if(IS_ERR(gpio_drv_data.dev[i])){
 			dev_err(dev,"Error in device_create \n");
-			return PTR_ERR(gpio_drv_data.dev);
+			return PTR_ERR(gpio_drv_data.dev[i]);
 		}
+				
 
-	}
+//		i++;
 
+//	}
 	return 0;
 
 }
@@ -262,7 +253,7 @@ int __init gpio_sysfs_init(void)
 	}
 
 	platform_driver_register(&gpiosysfs_platform_driver);
-	pr_info("in __init : module load success\n");
+	pr_info("module load success\n");
 	return 0;
 
 }
@@ -270,8 +261,6 @@ int __init gpio_sysfs_init(void)
 
 void __exit gpio_sysfs_exit(void)
 {
-	pr_info("in __exit : module exit routine called\n");
-
 	platform_driver_unregister(&gpiosysfs_platform_driver);
 	
 	class_destroy(gpio_drv_data.class_gpio);
@@ -282,3 +271,7 @@ module_init(gpio_sysfs_init);
 module_exit(gpio_sysfs_exit);
 
 
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Trezen");
+MODULE_DESCRIPTION("A gpio sysfs driver to toggle PD10");

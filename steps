@@ -1,0 +1,9 @@
+
+
+--> to compile kernel source code
+
+sudo make ARCH=arm CROSS_COMPILE=/opt/poky-atmel/2.4.4/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-  uImage dtbs LOADADDR=0x80008000 
+
+--> compile the dts file
+
+sudo make ARCH=arm CROSS_COMPILE=/opt/poky-atmel/2.4.4/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-  at91-sama5d2_com3.dtb

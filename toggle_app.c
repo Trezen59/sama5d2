@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <errno.h>
@@ -135,7 +136,11 @@ int main()
     
     gpio_write_value("pd10", GPIO_LOW_VALUE);
     
-    gpio_write_value("pd10", GPIO_HIGH_VALUE);
+    while(1)
+    { 
+
+	   gpio_write_value("pd10", GPIO_HIGH_VALUE);
     
+    }
     return 0;
 }
